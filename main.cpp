@@ -1,96 +1,58 @@
-#include <iostream>
+#include "b_tree.h"
+#include "ArgumentManager.h"
+
+
 using namespace std;
 
-struct node {
-  int *keys;
-  node **childptr;
-  bool leaf;
-  int size;
+int main(int argc, char *argv[]) {
+    ArgumentManager am(argc, argv);
+    ofstream output(am.get("outputput"));
+    ifstream commands(am.get("command"));
+    ifstream in(am.get("input"));
 
-  node(int degree) {
-    keys = new int[degree];
-    childptr = new node*[degree+1];
-    leaf = true;
-    size = 0;
 
-    for(int i=0; i<degree; i++) {
-      keys[i] = -1;
-    }
-    for(int i=0; i<degree+1; i++) {
-      childptr[i] = nullptr;
-    }
-  }
-};
+    /*
+    ifstream in("input1.txt");
+    ifstream commands("command1.txt");
+    ofstream output("output1.txt");
+    */
 
-class btree {
-  private:
-    node* root;
     int degree;
+    vector<int> list_of_levels,keys;
 
-  public:
-    btree(int _degree) {
-      root = nullptr;
-      degree = _degree;
+    while (in.peek() != EOF) {
+        int i;
+        in >> i;        
+        keys.push_back(i);        
+    }
+        
+    string s = "";
+    while (commands.peek() != EOF) {
+        getline(commands, s);
+        s.erase(remove(s.begin(), s.end(), '\n'), s.end());
+        s.erase(remove(s.begin(), s.end(), '\r'), s.end());
+
+        if (s.size() != 0){
+            if (s.find("Degree=") != string::npos)
+                degree = stoi(s.substr(s.find("=") + 1));
+
+            else if (s.find("Level ") != string::npos)
+                list_of_levels.push_back(stoi(s.substr(s.find(" ") + 1)));
+        }
     }
 
-    void insert(int data) {
-      if (root == nullptr) {
-        root = new node(degree);
-        root->keys[0] = data;
-        root->size = 1;
-      }
-      else {
-        addAtLeaf(nullptr, root, data);
-      }
+
+    B_tree my_tree(degree);
+
+    for (int i=0; i< keys.size();i++){
+        my_tree.insert(i);
+    }
+    output << "Height=" << my_tree.getHeight() << endl;
+
+    for (int i=0; i<list_of_levels.size();i++) {
+        my_tree.print(i, output);
+        output << endl;
     }
 
-    void addAtLeaf(node* parent, node* n, int data) {
-      if(n->leaf) {
-        int i = n->size;
-        while(i != 0 && n->keys[i-1] > data) {
-          n->keys[i] = n->keys[i-1];
-          i--;
-        }
-        n->keys[i] = data;
-        n->size +=1;
-      }
-      else {
-        int i = 0;
-        while(i < n->size && data > n->keys[i]) {
-          i ++;
-        }
-        addAtLeaf(n, n->childptr[i], data);
-      }
-
-      if(n->size == degree) {
-        if(n == root) {
-          node* temp = new node(degree);
-          temp->leaf = false;
-          temp->childptr[0] = n;
-          splitChild(temp, n);
-          root = temp;
-        }
-        else {
-          splitChild(parent, n);
-        }
-      }
-    }
-
-    void splitChild(node* parent, node* leftNode) {
-      node* rightNode = new node(degree);
-      int mid = (degree-1)/2;
-
-      // copy half of left node to right node
-
-      // copy half the pointer of left node to right node
-
-      // find the correct position to add the new array
-
-      // add the middle keys to the parent
-    }
-};
-
-int main() {
-  btree tree(3);
-  
+    return 0;
 }

@@ -20,10 +20,7 @@
   "C_Cpp_Runner.compilerArgs": [],
   "C_Cpp_Runner.linkerArgs": [],
   "C_Cpp_Runner.includePaths": [],
-  "C_Cpp_Runner.includeSearch": [
-    "*",
-    "**/*"
-  ],
+  "C_Cpp_Runner.includeSearch": ["*", "**/*"],
   "C_Cpp_Runner.excludeSearch": [
     "**/build",
     "**/build/**",
@@ -31,5 +28,14 @@
     "**/.*/**",
     "**/.vscode",
     "**/.vscode/**"
-  ]
+  ],
+  "files.associations": {
+    "*.cps": "javascript",
+    "string": "cpp",
+    "iterator": "cpp",
+    "algorithm": "cpp",
+    "iosfwd": "cpp",
+    "ostream": "cpp",
+    "new": "cpp"
+  }
 }
