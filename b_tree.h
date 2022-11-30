@@ -90,7 +90,7 @@ class B_tree {
   //lets's insert into the binary tree...
   void insert(int data) {
     if (root != nullptr) {
-      addAtLeaf(nullptr, root, data);      
+      addAtLeaf(root, nullptr, data);      
     } 
     else {
       root = new node(degree);
@@ -113,15 +113,16 @@ class B_tree {
   void validateChildren(node *parent, node *leftNode, node *rightNode,int index, int midKey) {
     parent->list_of_keys.insert(parent->list_of_keys.begin() + index, midKey);
     parent->size++;
-    parent->list_of_keys.erase(remove(parent->list_of_keys.begin(), parent->list_of_keys.end(), -1),
-                       parent->list_of_keys.end());
-    while (parent->list_of_keys.size() < degree) parent->list_of_keys.push_back(-1);
+    parent->list_of_keys.erase(remove(parent->list_of_keys.begin(), parent->list_of_keys.end(), -1), parent->list_of_keys.end());
+    while (parent->list_of_keys.size() < degree)
+      parent->list_of_keys.push_back(-1);
 
     leftNode->parent = parent;
     rightNode->parent = parent;
 
-    if (parent->child.at(index) != leftNode)
+    if (parent->child.at(index) != leftNode){
       parent->child.insert(parent->child.begin() + index, leftNode);
+    }
     parent->child.insert(parent->child.begin() + index + 1, rightNode);
 
     parent->child.erase(
@@ -131,22 +132,18 @@ class B_tree {
       parent->child.push_back(nullptr);
   }
 
-  // Helper function to add the midKey to the parent and add the children to the
-  // parent without affecting the parent's other children. (Does not check for
-  // if the parent is full)
-  void addchildToParent(node *parent, node *leftNode, node *rightNode,int midKey) {
+  void addingChild(node *parent, node *leftNode, node *rightNode,int midKey) {
     int i;
     for (i = 0; i < degree - 1; i++)
-      if (parent->list_of_keys.at(i) > midKey || parent->list_of_keys.at(i) == -1) break;
+      if (parent->list_of_keys.at(i) == -1 || parent->list_of_keys.at(i) > midKey) break;
 
-    // If the slot is empty in parent, insert
     if (parent->list_of_keys.at(i) == -1)
         parent->list_of_keys.at(i) = midKey, parent->size++;
     else
       validateChildren(parent, leftNode, rightNode, i, midKey);
 
-    parent->child.at(i) = leftNode;
     parent->child.at(i + 1) = rightNode;
+    parent->child.at(i) = leftNode;   
     parent->leaf = false;
 
     if (parent->parent == nullptr)
@@ -154,119 +151,89 @@ class B_tree {
 
     leftNode->parent = parent;
     rightNode->parent = parent;
-    if (leftNode->child[0] != nullptr) leftNode->leaf = false;
-    if (rightNode->child[0] != nullptr) rightNode->leaf = false;
+    if (rightNode->child[0] != 0) rightNode->leaf = false;
+    if (leftNode->child[0] != 0) leftNode->leaf = false;
+   
   }
 
-  // Adds the new node into the tree at first available leaf,
-  // if leaf is full uses splitChild to create a new array
-  void addAtLeaf(node *parent, node *n, int data) {
-    // If n is a leaf
-    if (n->leaf) {
-      int i = n->size;
-      // Find the first spot where data is less than list_of_keys[i - 1]
-      while (i != 0 && data < n->list_of_keys[i - 1]) {
-        // Pointer of arrays can change size dynamically
-        n->list_of_keys[i] = n->list_of_keys[i - 1];
-        i--;
-      }
-      
-      n->list_of_keys[i] = data;
-      n->parent = parent;
-      n->size++;
-    }
-
-    // Else find the first index where the data is bigger that list_of_keys[i] and
-    // call addAtLeaf() again to add it to traverse the tree and add it to a
-    // leaf
-    else if (get_next_spot(n, data) != -1) {
-      node *temp = n;
-      while (!temp->leaf && get_next_spot(temp, data) != -1)
-        temp = temp->child[get_next_spot(temp, data)];
-
-      addAtLeaf(temp->parent, temp, data);
-    }
-
-    // Need to determine if node is a leaf within splitChild() if it is, then
-    // split node accordingly
-    if (n->size == degree){
-      if (n == root) {
+  void addAtLeaf( node *parent, node *leaf, int data) {
+    if (leaf->size == degree){
+      if (leaf == root) {
         node *temp = new node(degree);
         temp->leaf = false;
-        temp->child[0] = n;
+        temp->child[0] = leaf;
         temp->size = 0;
-        splitChild(temp, n);
+        splitChild(leaf,temp);
         root = temp;
       }
       else
-        splitChild(parent, n);
+        splitChild(leaf,parent);
     }
+    if (leaf->leaf) {
+      int i = leaf->size;
+      while (leaf->list_of_keys[i - 1] > i != 0 && data) {
+        leaf->list_of_keys[i] = leaf->list_of_keys[i - 1];
+        i--;
+      }      
+      leaf->size++;  
+      leaf->parent = parent;  
+      leaf->list_of_keys[i] = data;
+      
+    }
+    else if (get_next_spot(leaf, data) != -1) {
+      node *temp = leaf;
+      while (!temp->leaf && get_next_spot(temp, data) != -1)
+        temp = temp->child[get_next_spot(temp, data)];
+
+      addAtLeaf(temp,temp->parent,data);
+    } 
   }
 
-  // n is a full child, split it into two children with parent as the new
-  // parent node. Need to find out if n is a leaf or not, pass pointers
-  // depending.
-  void splitChild(node *parent, node *leftNode) {
+  void splitChild(node *leftNode, node *parent ) {
     node *rightNode = new node(degree);
     int mid = (degree - 1) / 2;
 
     int midKey = leftNode->list_of_keys[mid];
 
-    // copy half of left node to right node
+    //split the left node
     for (int x = 0; x < leftNode->size - mid; x++) {
       rightNode->list_of_keys[x] = leftNode->list_of_keys[x + mid + 1];
       rightNode->size++;
-
-      leftNode->list_of_keys[x + mid + 1] = -1;
       leftNode->size--;
+      leftNode->list_of_keys[x + mid + 1] = -1;      
     }
-
-    // Remove midKey from leftNode
-    leftNode->list_of_keys[mid] = -1;
-    leftNode->size--;
-
     leftNode->parent = parent;
     rightNode->parent = parent;
+    leftNode->size--;
+    leftNode->list_of_keys[mid] = -1;   
 
-    // If passed node (leftNode) is not a leaf, copy the pointers to rightNode
-    if (!leftNode->leaf) {
-      // If not a leaf, has children, using the middle index, transfer bigger
-      // children to rightNode from leftNode
-      int x = 0;
+    if (leftNode->leaf == false) {
+      int num = 0;
       for (int i = mid + 1; i < degree + 1; i++) {
-        rightNode->child.at(x) = leftNode->child.at(i);
-        rightNode->child.at(x++)->parent = rightNode;
+        rightNode->child.at(num) = leftNode->child.at(i);
+        rightNode->child.at(num++)->parent = rightNode;
         leftNode->child.at(i) = nullptr;
       }
 
-      // copy half the pointer of the left node to the right node
-      /* --------------------- Done Above --------------------- */
-
-      // find the correct position to add the new array within the parent
-      // child array, need to add middlekey first because we are using add
-      // at leaf.
-
-      if (parent == nullptr) {
-        // Create a new parent
-        parent = new node(degree);
-        // Add leftNode and rightNode to parent
-        parent->leaf = false;
-        parent->child[0] = leftNode;
-        parent->child[1] = rightNode;
-        leftNode->parent = parent;
-        rightNode->parent = parent;
-        parent->parent = nullptr;
-        root = parent;
-      }
-
-      addchildToParent(parent, leftNode, rightNode, midKey);
-      if (parent->size == degree) splitChild(parent->parent, parent);
-
+    if (parent == nullptr) {
+      parent = new node(degree);
+      root = parent;
+      parent->child[0] = leftNode;
+      parent->child[1] = rightNode;
+      leftNode->parent = parent;
+      rightNode->parent = parent;
+      parent->leaf = false;
+      parent->parent = nullptr;
+      
     }
-
-    else if (leftNode->leaf) {
-      addchildToParent(parent, leftNode, rightNode, midKey);
-      if (parent->size == degree) splitChild(parent->parent, parent);
+    addingChild(parent, leftNode, rightNode, midKey);
+    if (leftNode->leaf) {
+      addingChild(parent, leftNode, rightNode, midKey);
+      if (parent->size == degree) 
+        splitChild( parent, parent->parent);
+    }
+    else if (parent->size == degree)
+      splitChild( parent, parent->parent);
     }
   }
 };
